@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import type { StoreType } from "polotno/model/store";
 
+import { defaultTemplate } from "../templates/defaultTemplate";
 import { useTemplatesEditorStore } from "../model/store/templates-editor-store";
 import { ensureGoogleFonts } from "./ensureGoogleFonts";
 import { applyInitialScale } from "./applyInitialScale";
@@ -79,6 +80,7 @@ export const useLoadTemplate = ({ store }: UseLoadTemplateProps) => {
         })
         .catch(() => {
           // Fallback to default template (Bill of Sale) if CMS template fetch fails
+          store.loadJSON(defaultTemplate);
           ensureGoogleFonts(store);
           setTemplateName(templateName);
           setDataReady(true);

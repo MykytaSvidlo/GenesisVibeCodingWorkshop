@@ -8,69 +8,7 @@ interface SmartFormSectionPanelProps {
   store: StoreType;
 }
 
-interface FieldHint {
-  label: string;
-  hint: string;
-  location: string;
-  example: string;
-}
 
-const FIELD_HINTS_MAP: Record<string, FieldHint> = {
-  "seller-name": {
-    label: "Seller Full Name",
-    hint: "💡 Enter seller's full legal name exactly as shown on government photo ID / Driver's License.",
-    location: "Section 1 (Seller Information)",
-    example: "e.g. Johnathan Vance",
-  },
-  "seller-address": {
-    label: "Seller Address",
-    hint: "💡 Official residence address including street, city, state, and ZIP code.",
-    location: "Section 1 (Seller Information)",
-    example: "e.g. 742 Evergreen Terrace, Springfield, IL 62704",
-  },
-  "buyer-name": {
-    label: "Buyer Full Name",
-    hint: "💡 Full legal name of the purchaser acquiring title to the vehicle.",
-    location: "Section 2 (Buyer Information)",
-    example: "e.g. Eleanor Rigby",
-  },
-  "buyer-address": {
-    label: "Buyer Address",
-    hint: "💡 Purchaser's residence or billing address for DMV title registration.",
-    location: "Section 2 (Buyer Information)",
-    example: "e.g. 104 Abbey Road, Seattle, WA 98101",
-  },
-  "vehicle-details": {
-    label: "Year, Make & Model",
-    hint: "💡 Include model year, manufacturer, model trim, body style, and primary color.",
-    location: "Section 3 (Vehicle Description)",
-    example: "e.g. 2024 Tesla Model Y Long Range (SUV, Solid Black)",
-  },
-  "vin-number": {
-    label: "VIN Number",
-    hint: "💡 17-character unique VIN found on vehicle title or driver-side door jamb sticker.",
-    location: "Section 3 (Vehicle Description)",
-    example: "e.g. 5YJ3E1EA1KF123456",
-  },
-  "odometer-reading": {
-    label: "Odometer Mileage",
-    hint: "💡 Current mileage reading on cluster display at the time of transaction.",
-    location: "Section 3 (Vehicle Description)",
-    example: "e.g. 12,450 Miles (Actual Mileage Certified)",
-  },
-  "purchase-price": {
-    label: "Purchase Price ($ USD)",
-    hint: "💡 Total agreed sale amount in USD. Written out format recommended for legal protection.",
-    location: "Section 4 (Price & Payment)",
-    example: "e.g. $28,500.00 USD (Twenty-Eight Thousand Five Hundred Dollars)",
-  },
-  "warranty-terms": {
-    label: "Warranty Statement",
-    hint: "💡 State warranty terms: AS-IS condition or limited title guarantee.",
-    location: "Section 4 (Price & Payment)",
-    example: "Condition: Sold AS-IS with clear title.",
-  },
-};
 
 const ENGLISH_PRESETS = [
   {
@@ -124,31 +62,281 @@ export const SmartFormSectionPanel: FC<SmartFormSectionPanelProps> = observer(
     const [showGuidanceInfo, setShowGuidanceInfo] = useState(true);
     const [isSavedPro, setIsSavedPro] = useState(false);
 
-    // Extract all text elements across pages in the Polotno store
-    const textElements = store.pages.flatMap((page) =>
-      page.children.filter((el) => el.type === "text")
-    ) as unknown as PolotnoElement[];
+    // Extract all text elements on the active page
+    const activePage = store.activePage || store.pages[0];
+    const textElements = (activePage
+      ? activePage.children.filter((el) => el.type === "text")
+      : []) as unknown as PolotnoElement[];
 
-    // Filter editable text fields
-    const editableFields = textElements.filter(
-      (el) =>
-        el.id !== "doc-title" &&
-        el.id !== "doc-subtitle" &&
-        el.id !== "sec1-title" &&
-        el.id !== "sec2-title" &&
-        el.id !== "sec3-title" &&
-        el.id !== "sec4-title" &&
-        !el.id?.endsWith("-label")
-    );
+    // Extract the exact 11 fields marked in RED in the user's document layout
+    const fieldConfigs: {
+      element: PolotnoElement;
+      prefix: string;
+      label: string;
+      hint: string;
+      location: string;
+      example: string;
+    }[] = [];
 
-    const handleTextChange = (element: PolotnoElement, newText: string) => {
-      element.set({ text: newText });
+    // Track element IDs assigned to form fields so elements are never duplicated
+    const usedElementIds = new Set<string>();
+
+    // Find right-hand value element next to a label element (green box in screenshot)
+    const findRightHandValueElement = (
+      labelEl: PolotnoElement,
+      fallbackPrefix: string = ""
+    ): { element: PolotnoElement; prefix: string } => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const labelX = (labelEl as any).x || 0;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const labelY = (labelEl as any).y || 0;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const labelHeight = (labelEl as any).height || 30;
+
+      const candidates = textElements.filter((el) => {
+        if (el === labelEl || usedElementIds.has(el.id)) return false;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const elX = (el as any).x || 0;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const elY = (el as any).y || 0;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const elHeight = (el as any).height || 30;
+
+        const yCenterLabel = labelY + labelHeight / 2;
+        const yCenterEl = elY + elHeight / 2;
+        const yDiff = Math.abs(yCenterEl - yCenterLabel);
+
+        return elX > labelX + 5 && yDiff < 45;
+      });
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      candidates.sort((a: any, b: any) => (a.x || 0) - (b.x || 0));
+
+      if (candidates.length > 0) {
+        const valEl = candidates[0];
+        usedElementIds.add(valEl.id);
+        return { element: valEl, prefix: "" };
+      }
+
+      // Check if labelEl itself contains underscores
+      const text = labelEl.text || "";
+      if (text.includes("_____") || text.includes(".....")) {
+        usedElementIds.add(labelEl.id);
+        return { element: labelEl, prefix: fallbackPrefix };
+      }
+
+      usedElementIds.add(labelEl.id);
+      return { element: labelEl, prefix: fallbackPrefix };
     };
 
-    const handleElementFocus = (element: PolotnoElement) => {
+    // Helper spatial/content matcher
+    const findEl = (
+      predicate: (text: string, lower: string, el: PolotnoElement) => boolean
+    ) => {
+      return textElements.find((el) => {
+        const text = el.text || "";
+        const lower = text.toLowerCase();
+        return predicate(text, lower, el);
+      });
+    };
+
+    // 1. Date (Top Header area, left)
+    const dateLabelEl = findEl(
+      (_, lower, el) => lower.includes("date") && !lower.includes("candidate") && ((el as unknown as { y?: number }).y || 0) < 320
+    );
+    if (dateLabelEl) {
+      const bound = findRightHandValueElement(dateLabelEl, "Date:");
+      fieldConfigs.push({
+        element: bound.element,
+        prefix: bound.prefix,
+        label: "Date",
+        hint: "💡 Transaction execution date (e.g. October 15, 2026).",
+        location: "Header",
+        example: "e.g. October 15, 2026",
+      });
+    }
+
+    // 2. State (Top Header area, right)
+    const stateLabelEl = findEl(
+      (_, lower, el) => lower.includes("state") && ((el as unknown as { y?: number }).y || 0) < 320
+    );
+    if (stateLabelEl) {
+      const bound = findRightHandValueElement(stateLabelEl, "State:");
+      fieldConfigs.push({
+        element: bound.element,
+        prefix: bound.prefix,
+        label: "State",
+        hint: "💡 Jurisdiction state governing this Bill of Sale (e.g. California).",
+        location: "Header",
+        example: "e.g. California",
+      });
+    }
+
+    // Filter Seller column (left, x < 600) vs Buyer column (right, x >= 600)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sellerElements = textElements.filter((el: any) => (el.x || 0) < 600 && (el.y || 0) >= 200 && (el.y || 0) < 750);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const buyerElements = textElements.filter((el: any) => (el.x || 0) >= 600 && (el.y || 0) >= 200 && (el.y || 0) < 750);
+
+    // 3. Seller Name
+    const sellerNameLabelEl = sellerElements.find((el) => (el.text || "").toLowerCase().includes("name")) || sellerElements[0];
+    if (sellerNameLabelEl) {
+      const bound = findRightHandValueElement(sellerNameLabelEl, "Name:");
+      fieldConfigs.push({
+        element: bound.element,
+        prefix: bound.prefix,
+        label: "Seller Name",
+        hint: "💡 Seller's full legal name as shown on official government ID.",
+        location: "The Seller",
+        example: "e.g. Johnathan Vance",
+      });
+    }
+
+    // 4. Seller Phone
+    const sellerPhoneLabelEl = sellerElements.find((el) => (el.text || "").toLowerCase().includes("phone")) || sellerElements[1];
+    if (sellerPhoneLabelEl && sellerPhoneLabelEl !== sellerNameLabelEl) {
+      const bound = findRightHandValueElement(sellerPhoneLabelEl, "Phone No:");
+      fieldConfigs.push({
+        element: bound.element,
+        prefix: bound.prefix,
+        label: "Seller Phone",
+        hint: "💡 Contact phone number of the seller.",
+        location: "The Seller",
+        example: "e.g. (555) 234-5678",
+      });
+    }
+
+    // 5. Seller Email
+    const sellerEmailLabelEl = sellerElements.find((el) => (el.text || "").toLowerCase().includes("email")) || sellerElements[2];
+    if (sellerEmailLabelEl && sellerEmailLabelEl !== sellerNameLabelEl && sellerEmailLabelEl !== sellerPhoneLabelEl) {
+      const bound = findRightHandValueElement(sellerEmailLabelEl, "Email Address:");
+      fieldConfigs.push({
+        element: bound.element,
+        prefix: bound.prefix,
+        label: "Seller Email",
+        hint: "💡 Primary email address of the seller.",
+        location: "The Seller",
+        example: "e.g. seller@example.com",
+      });
+    }
+
+    // 6. Seller Address
+    const sellerAddrLabelEl = sellerElements.find((el) => (el.text || "").toLowerCase().includes("address")) || sellerElements[3];
+    if (sellerAddrLabelEl && !fieldConfigs.some((c) => c.element === sellerAddrLabelEl)) {
+      const bound = findRightHandValueElement(sellerAddrLabelEl, "Address:");
+      fieldConfigs.push({
+        element: bound.element,
+        prefix: bound.prefix,
+        label: "Seller Address",
+        hint: "💡 Residence address including street, city, state, ZIP.",
+        location: "The Seller",
+        example: "e.g. 742 Evergreen Terrace, Springfield, IL 62704",
+      });
+    }
+
+    // 7. Buyer Name
+    const buyerNameLabelEl = buyerElements.find((el) => (el.text || "").toLowerCase().includes("name")) || buyerElements[0];
+    if (buyerNameLabelEl) {
+      const bound = findRightHandValueElement(buyerNameLabelEl, "Name:");
+      fieldConfigs.push({
+        element: bound.element,
+        prefix: bound.prefix,
+        label: "Buyer Name",
+        hint: "💡 Buyer's full legal name for title registration.",
+        location: "The Buyer",
+        example: "e.g. Eleanor Rigby",
+      });
+    }
+
+    // 8. Buyer Phone
+    const buyerPhoneLabelEl = buyerElements.find((el) => (el.text || "").toLowerCase().includes("phone")) || buyerElements[1];
+    if (buyerPhoneLabelEl && buyerPhoneLabelEl !== buyerNameLabelEl) {
+      const bound = findRightHandValueElement(buyerPhoneLabelEl, "Phone No.:");
+      fieldConfigs.push({
+        element: bound.element,
+        prefix: bound.prefix,
+        label: "Buyer Phone",
+        hint: "💡 Contact phone number of the purchaser.",
+        location: "The Buyer",
+        example: "e.g. (555) 987-6543",
+      });
+    }
+
+    // 9. Buyer Email
+    const buyerEmailLabelEl = buyerElements.find((el) => (el.text || "").toLowerCase().includes("email")) || buyerElements[2];
+    if (buyerEmailLabelEl && buyerEmailLabelEl !== buyerNameLabelEl && buyerEmailLabelEl !== buyerPhoneLabelEl) {
+      const bound = findRightHandValueElement(buyerEmailLabelEl, "Email Address:");
+      fieldConfigs.push({
+        element: bound.element,
+        prefix: bound.prefix,
+        label: "Buyer Email",
+        hint: "💡 Primary email address of the purchaser.",
+        location: "The Buyer",
+        example: "e.g. buyer@example.com",
+      });
+    }
+
+    // 10. Buyer Address
+    const buyerAddrLabelEl = buyerElements.find((el) => (el.text || "").toLowerCase().includes("address")) || buyerElements[3];
+    if (buyerAddrLabelEl && !fieldConfigs.some((c) => c.element === buyerAddrLabelEl)) {
+      const bound = findRightHandValueElement(buyerAddrLabelEl, "Address:");
+      fieldConfigs.push({
+        element: bound.element,
+        prefix: bound.prefix,
+        label: "Buyer Address",
+        hint: "💡 Residence address of the purchaser.",
+        location: "The Buyer",
+        example: "e.g. 104 Abbey Road, Seattle, WA 98101",
+      });
+    }
+
+    // 11. Item / Property Description
+    const itemDescLabelEl = textElements.find((el) => {
+      const text = (el.text || "").toLowerCase();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const y = (el as any).y || 0;
+      return (
+        (text.includes("item") || text.includes("property") || text.includes("details") || y > 650) &&
+        !fieldConfigs.some((c) => c.element === el)
+      );
+    });
+    if (itemDescLabelEl) {
+      const bound = findRightHandValueElement(itemDescLabelEl, "Description:");
+      fieldConfigs.push({
+        element: bound.element,
+        prefix: bound.prefix,
+        label: "Item / Property Description",
+        hint: "💡 Detailed description of the item or property being sold (make, model, serial #, condition).",
+        location: "Section III",
+        example: "e.g. 2024 Tesla Model Y (VIN: 5YJ3E1EA1KF123456, Solid Black)",
+      });
+    }
+
+    const getCleanInputValue = (fullText: string, prefix: string = ""): string => {
+      if (!fullText) return "";
+      let text = fullText;
+      if (prefix && text.startsWith(prefix)) {
+        text = text.slice(prefix.length).trimStart();
+      }
+      if (text.includes("_____") || text.includes("......")) return "";
+      return text;
+    };
+
+    const handleTextChange = (element: PolotnoElement, prefix: string, newText: string) => {
+      store.history.transaction(() => {
+        if (prefix) {
+          const val = newText ? `${prefix} ${newText}` : `${prefix} _______________________`;
+          element.set({ text: val });
+        } else {
+          element.set({ text: newText || "_______________________" });
+        }
+      });
+    };
+
+    const handleElementFocus = (element: PolotnoElement, hintText?: string) => {
       store.selectElements([element.id]);
-      if (FIELD_HINTS_MAP[element.id]) {
-        setActiveHint(FIELD_HINTS_MAP[element.id].hint);
+      if (hintText) {
+        setActiveHint(hintText);
       } else {
         setActiveHint(null);
       }
@@ -161,23 +349,30 @@ export const SmartFormSectionPanel: FC<SmartFormSectionPanelProps> = observer(
       setTimeout(() => {
         setIsAiLoading(false);
 
-        const sellerEl = textElements.find((el) => el.id === "seller-name");
-        const sellerAddrEl = textElements.find((el) => el.id === "seller-address");
-        const buyerEl = textElements.find((el) => el.id === "buyer-name");
-        const buyerAddrEl = textElements.find((el) => el.id === "buyer-address");
-        const vehicleEl = textElements.find((el) => el.id === "vehicle-details");
-        const vinEl = textElements.find((el) => el.id === "vin-number");
-        const odometerEl = textElements.find((el) => el.id === "odometer-reading");
-        const priceEl = textElements.find((el) => el.id === "purchase-price");
+        store.history.transaction(() => {
+          fieldConfigs.forEach((cfg) => {
+            let val = "";
+            if (cfg.label === "Date") val = "October 15, 2026";
+            if (cfg.label === "State") val = "California";
+            if (cfg.label === "Seller Name") val = preset.sellerName;
+            if (cfg.label === "Seller Phone") val = "(555) 234-5678";
+            if (cfg.label === "Seller Email") val = "seller@example.com";
+            if (cfg.label === "Seller Address") val = preset.sellerAddress;
+            if (cfg.label === "Buyer Name") val = preset.buyerName;
+            if (cfg.label === "Buyer Phone") val = "(555) 987-6543";
+            if (cfg.label === "Buyer Email") val = "buyer@example.com";
+            if (cfg.label === "Buyer Address") val = preset.buyerAddress;
+            if (cfg.label === "Item / Property Description") val = preset.vehicleDetails;
 
-        if (sellerEl) sellerEl.set({ text: preset.sellerName });
-        if (sellerAddrEl) sellerAddrEl.set({ text: preset.sellerAddress });
-        if (buyerEl) buyerEl.set({ text: preset.buyerName });
-        if (buyerAddrEl) buyerAddrEl.set({ text: preset.buyerAddress });
-        if (vehicleEl) vehicleEl.set({ text: preset.vehicleDetails });
-        if (vinEl) vinEl.set({ text: preset.vinNumber });
-        if (odometerEl) odometerEl.set({ text: preset.odometer });
-        if (priceEl) priceEl.set({ text: preset.price });
+            if (val) {
+              if (cfg.prefix) {
+                cfg.element.set({ text: `${cfg.prefix} ${val}` });
+              } else {
+                cfg.element.set({ text: val });
+              }
+            }
+          });
+        });
       }, 300);
     };
 
@@ -200,7 +395,7 @@ export const SmartFormSectionPanel: FC<SmartFormSectionPanelProps> = observer(
         <div className="rounded-xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-blue-50 p-3.5 space-y-2 shadow-2xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-indigo-900 flex items-center gap-1.5">
-              <span>💡</span> Bill of Sale Guidance Tips
+              <span>💡</span> General Bill of Sale Guidance Tips
             </span>
             <button
               onClick={() => setShowGuidanceInfo(!showGuidanceInfo)}
@@ -211,9 +406,9 @@ export const SmartFormSectionPanel: FC<SmartFormSectionPanelProps> = observer(
           </div>
           {showGuidanceInfo && (
             <div className="text-[11px] text-indigo-800 space-y-1 leading-snug">
-              <p>• <strong>VIN Number:</strong> Ensure exact 17-digit VIN match for DMV validation.</p>
-              <p>• <strong>Parties:</strong> Use full legal names as listed on government photo IDs.</p>
-              <p>• <strong>Live Canvas Update:</strong> Editing any input below updates the canvas in real time.</p>
+              <p>• <strong>The Parties:</strong> Enter full legal names and addresses for Seller & Buyer.</p>
+              <p>• <strong>Item Description:</strong> Include full details of property/vehicle sold.</p>
+              <p>• <strong>Live Canvas Update:</strong> Editing any input below updates the value box right next to the label on top of the line.</p>
             </div>
           )}
         </div>
@@ -259,51 +454,51 @@ export const SmartFormSectionPanel: FC<SmartFormSectionPanelProps> = observer(
         <div className="flex flex-col gap-3.5">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-gray-700">
-              Form Fields ({editableFields.length})
+              Form Fields ({fieldConfigs.length})
             </span>
             <span className="text-[10px] text-gray-400">Click field to highlight on canvas</span>
           </div>
 
-          {editableFields.map((el, index) => {
-            const currentText = el.text || "";
-            const hintConfig = FIELD_HINTS_MAP[el.id];
-            const fieldLabel =
-              hintConfig?.label ||
-              el.name ||
-              `Field ${index + 1}`;
+          {fieldConfigs.map((cfg, index) => {
+            const rawCanvasText = cfg.element.text || "";
+            const currentInputValue = getCleanInputValue(rawCanvasText, cfg.prefix);
 
             return (
               <div
-                key={el.id || index}
+                key={cfg.element.id || index}
                 className="flex flex-col gap-2 rounded-xl border border-gray-200 bg-white p-3.5 shadow-2xs transition-all focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 hover:border-blue-300"
               >
                 {/* Field Header */}
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-gray-900 truncate">
-                    {fieldLabel}
+                    {cfg.label}
                   </label>
-                  {hintConfig && (
+                  {cfg.location && (
                     <span className="rounded-md bg-blue-50 px-2 py-0.5 text-[9px] font-semibold text-blue-700 border border-blue-200">
-                      {hintConfig.location}
+                      {cfg.location}
                     </span>
                   )}
                 </div>
 
                 {/* Fill Guidance Callout Box */}
-                {hintConfig && (
+                {cfg.hint && (
                   <div className="rounded-lg bg-indigo-50/70 border border-indigo-100 p-2 text-[11px] text-indigo-900 leading-snug">
-                    <p className="font-medium">{hintConfig.hint}</p>
-                    <p className="text-[10px] text-indigo-600 mt-0.5 font-mono">{hintConfig.example}</p>
+                    <p className="font-medium">{cfg.hint}</p>
+                    {cfg.example && (
+                      <p className="text-[10px] text-indigo-600 mt-0.5 font-mono">{cfg.example}</p>
+                    )}
                   </div>
                 )}
 
                 {/* Input Textarea */}
                 <textarea
-                  rows={currentText.length > 40 ? 2 : 1}
-                  value={currentText}
-                  onFocus={() => handleElementFocus(el)}
-                  onChange={(e) => handleTextChange(el, e.target.value)}
-                  placeholder={`Enter ${fieldLabel.toLowerCase()}...`}
+                  rows={currentInputValue.length > 40 ? 2 : 1}
+                  value={currentInputValue}
+                  onKeyDown={(e) => e.stopPropagation()}
+                  onKeyUp={(e) => e.stopPropagation()}
+                  onFocus={() => handleElementFocus(cfg.element, cfg.hint)}
+                  onChange={(e) => handleTextChange(cfg.element, cfg.prefix, e.target.value)}
+                  placeholder={`Enter ${cfg.label.toLowerCase()}...`}
                   className="w-full resize-none rounded-lg border border-gray-300 bg-white p-2.5 text-xs font-medium text-gray-900 transition-all focus:border-blue-600 focus:outline-hidden focus:ring-1 focus:ring-blue-600"
                 />
               </div>
