@@ -18,6 +18,24 @@ jobs:
   build:
     name: Build site
     runs-on: ubuntu-latest
+    env:
+      ASTRO_TELEMETRY_DISABLED: 1
+      CMS_HOST: "http://localhost:1337"
+      CMS_READ_TOKEN: "mock-token"
+      ENVIRONMENT: "production"
+      WEB_HOST: "mykytasvidlo.github.io"
+      BACKEND_HOST: "http://localhost:1337"
+      PROJECT_BASE: "/GenesisVibeCodingWorkshop"
+      MAIN_APP_BASE: "http://localhost:4322"
+      CAPTCHA_SITE_KEY: "mock-key"
+      CAPTCHA_LIMIT: 5
+      GTAG_ID: "mock-gtag"
+      MICROSOFT_CLARITY_ID: "mock-clarity"
+      AMPLITUDE_KEY: "mock-amplitude"
+      ANALYTICS_PRODUCT: "mock-product"
+      GOOGLE_AUTH_CLIENT_ID: "mock-client-id"
+      CUSTOMER_IO_KEY: "mock-customerio"
+      REACT_APP_SSE_URL: "http://localhost:8080"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
