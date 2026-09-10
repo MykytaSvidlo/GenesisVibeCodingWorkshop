@@ -86,10 +86,14 @@ const getAllRoutes = async <T>(url: string): Promise<Array<T>> => {
       meta: { pagination: { pageCount: number } };
     }>(currentPage, url);
 
-    pages.push(...result.data);
+    if (result?.data && Array.isArray(result.data)) {
+      pages.push(...result.data);
+    }
 
     if (result?.meta?.pagination?.pageCount) {
       pageCount = result.meta.pagination.pageCount;
+    } else {
+      break;
     }
 
     currentPage++;

@@ -1,8 +1,6 @@
 import { useCallback } from "react";
 import type { StoreType } from "polotno/model/store";
 
-import { localeNavigate } from "@/shared/lib/navigation/localeNavigate";
-
 import { useTemplatesEditorStore } from "../model/store/templates-editor-store";
 import { ensureGoogleFonts } from "./ensureGoogleFonts";
 import { applyInitialScale } from "./applyInitialScale";
