@@ -11,44 +11,64 @@ interface SmartFormSectionPanelProps {
 interface FieldHint {
   label: string;
   hint: string;
+  location: string;
+  example: string;
 }
 
 const FIELD_HINTS_MAP: Record<string, FieldHint> = {
   "seller-name": {
     label: "Seller Full Name",
-    hint: "💡 Enter seller's full legal name as shown on official photo ID / Driver's License.",
+    hint: "💡 Enter seller's full legal name exactly as shown on government photo ID / Driver's License.",
+    location: "Section 1 (Seller Information)",
+    example: "e.g. Johnathan Vance",
   },
   "seller-address": {
-    label: "Seller Street Address",
-    hint: "💡 Official street address, city, state, and ZIP code of seller.",
+    label: "Seller Address",
+    hint: "💡 Official residence address including street, city, state, and ZIP code.",
+    location: "Section 1 (Seller Information)",
+    example: "e.g. 742 Evergreen Terrace, Springfield, IL 62704",
   },
   "buyer-name": {
     label: "Buyer Full Name",
-    hint: "💡 Legal name of the purchaser acquiring ownership.",
+    hint: "💡 Full legal name of the purchaser acquiring title to the vehicle.",
+    location: "Section 2 (Buyer Information)",
+    example: "e.g. Eleanor Rigby",
   },
   "buyer-address": {
-    label: "Buyer Street Address",
-    hint: "💡 Purchaser's residence or billing address for registration.",
+    label: "Buyer Address",
+    hint: "💡 Purchaser's residence or billing address for DMV title registration.",
+    location: "Section 2 (Buyer Information)",
+    example: "e.g. 104 Abbey Road, Seattle, WA 98101",
   },
   "vehicle-details": {
     label: "Year, Make & Model",
-    hint: "💡 Specify model year, manufacturer, model name, trim, and color.",
+    hint: "💡 Include model year, manufacturer, model trim, body style, and primary color.",
+    location: "Section 3 (Vehicle Description)",
+    example: "e.g. 2024 Tesla Model Y Long Range (SUV, Solid Black)",
   },
   "vin-number": {
-    label: "Vehicle Identification Number (VIN)",
-    hint: "💡 17-character unique VIN found on vehicle title or windshield base.",
+    label: "VIN Number",
+    hint: "💡 17-character unique VIN found on vehicle title or driver-side door jamb sticker.",
+    location: "Section 3 (Vehicle Description)",
+    example: "e.g. 5YJ3E1EA1KF123456",
   },
   "odometer-reading": {
     label: "Odometer Mileage",
-    hint: "💡 Current mileage reading shown on dashboard cluster.",
+    hint: "💡 Current mileage reading on cluster display at the time of transaction.",
+    location: "Section 3 (Vehicle Description)",
+    example: "e.g. 12,450 Miles (Actual Mileage Certified)",
   },
   "purchase-price": {
     label: "Purchase Price ($ USD)",
-    hint: "💡 Total agreed sale amount in US Dollars.",
+    hint: "💡 Total agreed sale amount in USD. Written out format recommended for legal protection.",
+    location: "Section 4 (Price & Payment)",
+    example: "e.g. $28,500.00 USD (Twenty-Eight Thousand Five Hundred Dollars)",
   },
   "warranty-terms": {
-    label: "Warranty & Title Terms",
-    hint: "💡 Specify AS-IS condition or limited title guarantee.",
+    label: "Warranty Statement",
+    hint: "💡 State warranty terms: AS-IS condition or limited title guarantee.",
+    location: "Section 4 (Price & Payment)",
+    example: "Condition: Sold AS-IS with clear title.",
   },
 };
 
@@ -101,6 +121,7 @@ export const SmartFormSectionPanel: FC<SmartFormSectionPanelProps> = observer(
     const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
     const [isAiLoading, setIsAiLoading] = useState(false);
     const [activeHint, setActiveHint] = useState<string | null>(null);
+    const [showGuidanceInfo, setShowGuidanceInfo] = useState(true);
     const [isSavedPro, setIsSavedPro] = useState(false);
 
     // Extract all text elements across pages in the Polotno store
@@ -108,7 +129,7 @@ export const SmartFormSectionPanel: FC<SmartFormSectionPanelProps> = observer(
       page.children.filter((el) => el.type === "text")
     ) as unknown as PolotnoElement[];
 
-    // Filter editable text fields (excluding headers and fixed title labels)
+    // Filter editable text fields
     const editableFields = textElements.filter(
       (el) =>
         el.id !== "doc-title" &&
@@ -157,7 +178,7 @@ export const SmartFormSectionPanel: FC<SmartFormSectionPanelProps> = observer(
         if (vinEl) vinEl.set({ text: preset.vinNumber });
         if (odometerEl) odometerEl.set({ text: preset.odometer });
         if (priceEl) priceEl.set({ text: preset.price });
-      }, 400);
+      }, 300);
     };
 
     return (
@@ -167,26 +188,48 @@ export const SmartFormSectionPanel: FC<SmartFormSectionPanelProps> = observer(
           <div className="flex items-center justify-between">
             <SidePanelSectionLabel label="Smart Form" type="header" />
             <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-[10px] font-bold text-blue-700 uppercase tracking-wider">
-              Bill of Sale
+              Fill Guidance Active
             </span>
           </div>
           <p className="text-xs text-gray-500">
-            Fill out form fields with live guidance hints. Changes update on canvas instantly!
+            Fill out form fields below. Hover or click any field for legal fill hints!
           </p>
+        </div>
+
+        {/* Legal Fill Guidance Banner */}
+        <div className="rounded-xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-blue-50 p-3.5 space-y-2 shadow-2xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-indigo-900 flex items-center gap-1.5">
+              <span>💡</span> Bill of Sale Guidance Tips
+            </span>
+            <button
+              onClick={() => setShowGuidanceInfo(!showGuidanceInfo)}
+              className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-800"
+            >
+              {showGuidanceInfo ? "Hide" : "Show Tips"}
+            </button>
+          </div>
+          {showGuidanceInfo && (
+            <div className="text-[11px] text-indigo-800 space-y-1 leading-snug">
+              <p>• <strong>VIN Number:</strong> Ensure exact 17-digit VIN match for DMV validation.</p>
+              <p>• <strong>Parties:</strong> Use full legal names as listed on government photo IDs.</p>
+              <p>• <strong>Live Canvas Update:</strong> Editing any input below updates the canvas in real time.</p>
+            </div>
+          )}
         </div>
 
         {/* AI Presets Quick Fill */}
         <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-3.5 space-y-2.5 shadow-2xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-blue-900 flex items-center gap-1.5">
-              <span>⚡</span> Sample Presets
+              <span>⚡</span> 1-Click Sample Presets
             </span>
             {isAiLoading && (
               <span className="animate-spin text-xs text-blue-600">🌀</span>
             )}
           </div>
           <p className="text-[11px] text-blue-800/80 leading-snug">
-            Select a sample vehicle transaction to auto-fill all form fields:
+            Auto-fill form fields with sample vehicle transactions:
           </p>
           <div className="flex flex-col gap-1.5">
             {ENGLISH_PRESETS.map((preset) => (
@@ -207,18 +250,18 @@ export const SmartFormSectionPanel: FC<SmartFormSectionPanelProps> = observer(
 
         {/* Active Fill Hint Tooltip Banner */}
         {activeHint && (
-          <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-3 shadow-xs animate-in fade-in duration-150">
-            <p className="text-xs font-medium text-indigo-900">{activeHint}</p>
+          <div className="rounded-xl border border-blue-300 bg-blue-100/80 p-3 shadow-xs animate-in fade-in duration-150">
+            <p className="text-xs font-semibold text-blue-950">{activeHint}</p>
           </div>
         )}
 
-        {/* Editable Form Fields */}
-        <div className="flex flex-col gap-3">
+        {/* Editable Form Fields with Guidance Tooltips */}
+        <div className="flex flex-col gap-3.5">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-gray-700">
               Form Fields ({editableFields.length})
             </span>
-            <span className="text-[10px] text-gray-400">Click field to highlight</span>
+            <span className="text-[10px] text-gray-400">Click field to highlight on canvas</span>
           </div>
 
           {editableFields.map((el, index) => {
@@ -232,31 +275,37 @@ export const SmartFormSectionPanel: FC<SmartFormSectionPanelProps> = observer(
             return (
               <div
                 key={el.id || index}
-                className="flex flex-col gap-1.5 rounded-xl border border-gray-200 bg-white p-3 shadow-2xs transition-all focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100"
+                className="flex flex-col gap-2 rounded-xl border border-gray-200 bg-white p-3.5 shadow-2xs transition-all focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 hover:border-blue-300"
               >
+                {/* Field Header */}
                 <div className="flex items-center justify-between">
-                  <label className="text-[11px] font-semibold text-gray-700 truncate">
+                  <label className="text-xs font-bold text-gray-900 truncate">
                     {fieldLabel}
                   </label>
                   {hintConfig && (
-                    <span className="text-[10px] font-medium text-blue-600 cursor-help" title={hintConfig.hint}>
-                      ⓘ Hint
+                    <span className="rounded-md bg-blue-50 px-2 py-0.5 text-[9px] font-semibold text-blue-700 border border-blue-200">
+                      {hintConfig.location}
                     </span>
                   )}
                 </div>
+
+                {/* Fill Guidance Callout Box */}
+                {hintConfig && (
+                  <div className="rounded-lg bg-indigo-50/70 border border-indigo-100 p-2 text-[11px] text-indigo-900 leading-snug">
+                    <p className="font-medium">{hintConfig.hint}</p>
+                    <p className="text-[10px] text-indigo-600 mt-0.5 font-mono">{hintConfig.example}</p>
+                  </div>
+                )}
+
+                {/* Input Textarea */}
                 <textarea
-                  rows={currentText.length > 35 ? 2 : 1}
+                  rows={currentText.length > 40 ? 2 : 1}
                   value={currentText}
                   onFocus={() => handleElementFocus(el)}
                   onChange={(e) => handleTextChange(el, e.target.value)}
                   placeholder={`Enter ${fieldLabel.toLowerCase()}...`}
-                  className="w-full resize-none rounded-lg border border-gray-200 bg-gray-50/50 p-2 text-xs font-medium text-gray-900 transition-all focus:border-blue-500 focus:bg-white focus:outline-hidden"
+                  className="w-full resize-none rounded-lg border border-gray-300 bg-white p-2.5 text-xs font-medium text-gray-900 transition-all focus:border-blue-600 focus:outline-hidden focus:ring-1 focus:ring-blue-600"
                 />
-                {hintConfig && (
-                  <p className="text-[10px] text-gray-400 leading-tight">
-                    {hintConfig.hint}
-                  </p>
-                )}
               </div>
             );
           })}
