@@ -1,7 +1,13 @@
-import { useCallback, type FC } from "react";
+import { useCallback, useState, type FC } from "react";
 import type { StoreType } from "polotno/model/store";
 
 import { useTranslation } from "@/shared/lib/translations";
+import {
+  CloudImportButtons,
+  CloudImportModal,
+  type CloudProvider,
+  type MockCloudFile,
+} from "@/features/cloudImport";
 
 import UploadList from "../../../../../components/uploadList/UploadList";
 import type { UploadListImage } from "../../../../../model/element-types";
@@ -21,6 +27,9 @@ export const UploadPhotoTab: FC<UploadPhotoTabProps> = ({ store, from }) => {
   const removeUploadedPhotos =
     useTemplatesEditorStore.use.removeUploadedPhotos();
   const showToast = useTemplatesEditorStore.use.showToast();
+
+  const [isCloudModalOpen, setIsCloudModalOpen] = useState(false);
+  const [cloudProvider, setCloudProvider] = useState<CloudProvider>("google-drive");
 
   const { addImageToCanvas } = useAddElements({ store, type: "image" });
 
@@ -55,22 +64,57 @@ export const UploadPhotoTab: FC<UploadPhotoTabProps> = ({ store, from }) => {
     [addUploadedPhotos, addImageToCanvas]
   );
 
+  const handleOpenCloudModal = (provider: CloudProvider) => {
+    setCloudProvider(provider);
+    setIsCloudModalOpen(true);
+  };
+
+  const handleSelectCloudFile = (mockFile: MockCloudFile) => {
+    const cloudPhoto = {
+      id: crypto.randomUUID(),
+      src: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop&q=80",
+    };
+    addUploadedPhotos([cloudPhoto]);
+    showToast({
+      id: "cloud-import-success",
+      header: "Cloud Document Imported",
+      content: `Imported "${mockFile.name}" from ${mockFile.provider === "google-drive" ? "Google Drive" : "Dropbox"}.`,
+      variant: "success",
+    });
+  };
+
   return (
-    <BaseUploadTab
-      tool="photo"
-      from={from}
-      maxSize={50}
-      formats="jpg, jpeg, png, bmp, webp, heic, jfif, pdf"
-      onFileUpload={handlePhotoUpload}
-      count={photos.length}
-      UploadList={
-        <UploadList
-          store={store}
-          images={photos.map((photo) => ({ id: photo.id, src: photo.src }))}
-          onDelete={handleRemovePhoto}
-          type="image"
+    <div className="flex flex-col w-full h-full">
+      <BaseUploadTab
+        tool="photo"
+        from={from}
+        maxSize={50}
+        formats="jpg, jpeg, png, bmp, webp, heic, jfif, pdf"
+        onFileUpload={handlePhotoUpload}
+        count={photos.length}
+        UploadList={
+          <UploadList
+            store={store}
+            images={photos.map((photo) => ({ id: photo.id, src: photo.src }))}
+            onDelete={handleRemovePhoto}
+            type="image"
+          />
+        }
+      />
+
+      <div className="px-5 pb-5">
+        <CloudImportButtons
+          onOpenModal={handleOpenCloudModal}
+          className="pt-1 flex-wrap justify-start"
         />
-      }
-    />
+      </div>
+
+      <CloudImportModal
+        isOpen={isCloudModalOpen}
+        onClose={() => setIsCloudModalOpen(false)}
+        initialProvider={cloudProvider}
+        onSelectFile={handleSelectCloudFile}
+      />
+    </div>
   );
 };
