@@ -41,7 +41,9 @@ cmsHttpClient.getPage = async <T>(url: string, attempt = 1): Promise<T> => {
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
 
   try {
-    const response = await cmsHttpClient.get<T>(url, { signal: controller.signal });
+    const response = await cmsHttpClient.get<T>(url, {
+      signal: controller.signal,
+    });
     clearTimeout(timeoutId);
     const data = response.data;
     localCacheTest[url] = data;
@@ -54,6 +56,7 @@ cmsHttpClient.getPage = async <T>(url: string, attempt = 1): Promise<T> => {
     }
 
     logger.warn(`Strapi request fallback for ${url}: ${err}`);
+
     return { data: null } as unknown as T;
   }
 };

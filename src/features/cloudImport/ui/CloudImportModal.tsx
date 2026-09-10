@@ -1,6 +1,12 @@
 import React, { useState } from "react";
+
 import { cn } from "@/shared/lib/utils/cn";
-import type { CloudImportModalProps, CloudProvider, MockCloudFile } from "../model/types";
+
+import type {
+  CloudImportModalProps,
+  CloudProvider,
+  MockCloudFile,
+} from "../model/types";
 
 const MOCK_FILES: MockCloudFile[] = [
   {
@@ -51,7 +57,8 @@ export const CloudImportModal: React.FC<CloudImportModalProps> = ({
   onSelectFile,
   initialProvider = "google-drive",
 }) => {
-  const [activeProvider, setActiveProvider] = useState<CloudProvider>(initialProvider);
+  const [activeProvider, setActiveProvider] =
+    useState<CloudProvider>(initialProvider);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
   const [isImporting, setIsImporting] = useState(false);
@@ -72,10 +79,13 @@ export const CloudImportModal: React.FC<CloudImportModalProps> = ({
     setIsImporting(true);
     setTimeout(() => {
       setIsImporting(false);
-      setImportSuccess(`Successfully imported "${file.name}" from ${activeProvider === "google-drive" ? "Google Drive" : "Dropbox"}!`);
+      setImportSuccess(
+        `Successfully imported "${file.name}" from ${activeProvider === "google-drive" ? "Google Drive" : "Dropbox"}!`
+      );
       if (onSelectFile) {
         onSelectFile(file);
       }
+
       setTimeout(() => {
         setImportSuccess(null);
         setSelectedFileId(null);
@@ -85,56 +95,71 @@ export const CloudImportModal: React.FC<CloudImportModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+    <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs duration-200">
       <div
-        className="w-full max-w-xl rounded-2xl bg-white shadow-2xl overflow-hidden border border-gray-100 transition-all"
+        className="w-full max-w-xl overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl transition-all"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+        <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50/50 px-6 py-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 font-semibold shadow-xs">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 font-semibold text-blue-600 shadow-xs">
               {activeProvider === "google-drive" ? (
-                <svg className="w-6 h-6" viewBox="0 0 87.3 78" fill="none">
-                  <path d="M6.6 66.85l25.3-43.8 25.3 43.8H6.6z" fill="#0066DA" />
-                  <path d="M43.65 23.05L68.95 66.85h-50.6l25.3-43.8z" fill="#00AC47" />
-                  <path d="M68.95 66.85L56.3 44.9H5.7l12.65 21.95h50.6z" fill="#EA4335" />
-                  <path d="M43.65 23.05L31 1.1h25.3l12.65 21.95H43.65z" fill="#FFBA00" />
+                <svg className="h-6 w-6" viewBox="0 0 87.3 78" fill="none">
+                  <path
+                    d="M6.6 66.85l25.3-43.8 25.3 43.8H6.6z"
+                    fill="#0066DA"
+                  />
+                  <path
+                    d="M43.65 23.05L68.95 66.85h-50.6l25.3-43.8z"
+                    fill="#00AC47"
+                  />
+                  <path
+                    d="M68.95 66.85L56.3 44.9H5.7l12.65 21.95h50.6z"
+                    fill="#EA4335"
+                  />
+                  <path
+                    d="M43.65 23.05L31 1.1h25.3l12.65 21.95H43.65z"
+                    fill="#FFBA00"
+                  />
                 </svg>
               ) : (
-                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="#0061FF">
+                <svg className="h-6 w-6" viewBox="0 0 24 24" fill="#0061FF">
                   <path d="M6 2l6 3.8L18 2l4.8 4.2-6 4.8 6 4.8-4.8 4.2L12 16.2 6 20.2 1.2 16l6-4.8-6-4.8L6 2zm12 12.2l-6-3.8-6 3.8 6 3.8 6-3.8z" />
                 </svg>
               )}
             </div>
             <div>
-              <h3 className="text-lg font-bold text-gray-900 leading-tight">
-                Import from {activeProvider === "google-drive" ? "Google Drive" : "Dropbox"}
+              <h3 className="text-lg leading-tight font-bold text-gray-900">
+                Import from{" "}
+                {activeProvider === "google-drive" ? "Google Drive" : "Dropbox"}
               </h3>
-              <p className="text-xs text-gray-500">Select a document template from your cloud storage</p>
+              <p className="text-xs text-gray-500">
+                Select a document template from your cloud storage
+              </p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
           >
             ✕
           </button>
         </div>
 
         {/* Cloud Provider Tabs */}
-        <div className="flex border-b border-gray-100 bg-gray-50/30 px-6 pt-3 gap-2">
+        <div className="flex gap-2 border-b border-gray-100 bg-gray-50/30 px-6 pt-3">
           <button
             onClick={() => {
               setActiveProvider("google-drive");
               setSelectedFileId(null);
             }}
             className={cn(
-              "flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-all rounded-t-lg",
+              "flex items-center gap-2 rounded-t-lg border-b-2 px-4 py-2 text-sm font-medium transition-all",
               activeProvider === "google-drive"
-                ? "border-blue-600 text-blue-600 bg-white shadow-xs"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100/50"
+                ? "border-blue-600 bg-white text-blue-600 shadow-xs"
+                : "border-transparent text-gray-500 hover:bg-gray-100/50 hover:text-gray-700"
             )}
           >
             <span>🟢 Google Drive</span>
@@ -145,10 +170,10 @@ export const CloudImportModal: React.FC<CloudImportModalProps> = ({
               setSelectedFileId(null);
             }}
             className={cn(
-              "flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-all rounded-t-lg",
+              "flex items-center gap-2 rounded-t-lg border-b-2 px-4 py-2 text-sm font-medium transition-all",
               activeProvider === "dropbox"
-                ? "border-blue-600 text-blue-600 bg-white shadow-xs"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100/50"
+                ? "border-blue-600 bg-white text-blue-600 shadow-xs"
+                : "border-transparent text-gray-500 hover:bg-gray-100/50 hover:text-gray-700"
             )}
           >
             <span>🟦 Dropbox</span>
@@ -156,52 +181,59 @@ export const CloudImportModal: React.FC<CloudImportModalProps> = ({
         </div>
 
         {/* Search Input */}
-        <div className="p-4 border-b border-gray-100">
+        <div className="border-b border-gray-100 p-4">
           <div className="relative">
             <input
               type="text"
               placeholder="Search Bill of Sale or contract..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-xl border border-gray-200 bg-gray-50/50 pl-10 pr-4 py-2 text-sm focus:border-blue-500 focus:bg-white focus:outline-hidden transition-all"
+              className="w-full rounded-xl border border-gray-200 bg-gray-50/50 py-2 pr-4 pl-10 text-sm transition-all focus:border-blue-500 focus:bg-white focus:outline-hidden"
             />
-            <span className="absolute left-3 top-2.5 text-gray-400 text-sm">🔍</span>
+            <span className="absolute top-2.5 left-3 text-sm text-gray-400">
+              🔍
+            </span>
           </div>
         </div>
 
         {/* File List */}
-        <div className="max-h-64 overflow-y-auto p-4 space-y-2">
-          {importSuccess ? (
-            <div className="flex flex-col items-center justify-center py-8 text-center animate-in zoom-in-95">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-green-600 text-xl font-bold mb-2">
+        <div className="max-h-64 space-y-2 overflow-y-auto p-4">
+          {importSuccess && (
+            <div className="animate-in zoom-in-95 flex flex-col items-center justify-center py-8 text-center">
+              <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-xl font-bold text-green-600">
                 ✓
               </div>
-              <p className="text-sm font-semibold text-gray-900">{importSuccess}</p>
+              <p className="text-sm font-semibold text-gray-900">
+                {importSuccess}
+              </p>
             </div>
-          ) : filteredFiles.length === 0 ? (
+          )}
+          {!importSuccess && filteredFiles.length === 0 && (
             <div className="py-8 text-center text-sm text-gray-400">
               No files found matching "{searchQuery}"
             </div>
-          ) : (
+          )}
+          {!importSuccess && filteredFiles.length > 0 && (
             filteredFiles.map((file) => {
               const isSelected = selectedFileId === file.id;
+
               return (
                 <div
                   key={file.id}
                   onClick={() => setSelectedFileId(file.id)}
                   className={cn(
-                    "flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all",
+                    "flex cursor-pointer items-center justify-between rounded-xl border p-3 transition-all",
                     isSelected
                       ? "border-blue-500 bg-blue-50/50 shadow-xs"
                       : "border-gray-100 hover:border-gray-200 hover:bg-gray-50/50"
                   )}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-600 font-bold text-xs">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-red-50 text-xs font-bold text-red-600">
                       PDF
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900 line-clamp-1">
+                      <p className="line-clamp-1 text-sm font-medium text-gray-900">
                         {file.name}
                       </p>
                       <p className="text-xs text-gray-400">
@@ -213,7 +245,7 @@ export const CloudImportModal: React.FC<CloudImportModalProps> = ({
                   <div className="flex items-center gap-2">
                     <div
                       className={cn(
-                        "h-5 w-5 rounded-full border flex items-center justify-center transition-all",
+                        "flex h-5 w-5 items-center justify-center rounded-full border transition-all",
                         isSelected
                           ? "border-blue-600 bg-blue-600 text-white"
                           : "border-gray-300"
@@ -238,7 +270,7 @@ export const CloudImportModal: React.FC<CloudImportModalProps> = ({
           <div className="flex gap-2">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 rounded-xl transition-colors"
+              className="rounded-xl px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
             >
               Cancel
             </button>
@@ -246,10 +278,10 @@ export const CloudImportModal: React.FC<CloudImportModalProps> = ({
               disabled={!selectedFileId || isImporting || !!importSuccess}
               onClick={handleImport}
               className={cn(
-                "flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white rounded-xl shadow-md transition-all",
+                "flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold text-white shadow-md transition-all",
                 selectedFileId && !isImporting
                   ? "bg-blue-600 hover:bg-blue-700 hover:shadow-lg active:scale-98"
-                  : "bg-blue-300 cursor-not-allowed"
+                  : "cursor-not-allowed bg-blue-300"
               )}
             >
               {isImporting ? (

@@ -5,7 +5,13 @@ import { useState, type FC } from "react";
 import { Title } from "@/shared/ui/title";
 import { UploadArea, type IUploadAreaProps } from "@/shared/ui/upload-area";
 import { UploadButton } from "@/shared/ui/upload-button";
-import { CloudImportButtons, CloudImportModal, type CloudProvider, type MockCloudFile } from "@/features/cloudImport";
+
+import {
+  CloudImportButtons,
+  CloudImportModal,
+  type CloudProvider,
+  type MockCloudFile,
+} from "@/features/cloudImport";
 
 export interface IDefaultHeroProps extends IUploadAreaProps {
   readonly title: string;
@@ -27,7 +33,8 @@ export const DefaultHero: FC<IDefaultHeroProps> = ({
   showUnlockIllustration,
 }) => {
   const [isCloudModalOpen, setIsCloudModalOpen] = useState(false);
-  const [cloudProvider, setCloudProvider] = useState<CloudProvider>("google-drive");
+  const [cloudProvider, setCloudProvider] =
+    useState<CloudProvider>("google-drive");
 
   const handleOpenCloudModal = (provider: CloudProvider) => {
     setCloudProvider(provider);
@@ -68,11 +75,11 @@ export const DefaultHero: FC<IDefaultHeroProps> = ({
 
         <CloudImportButtons
           onOpenModal={handleOpenCloudModal}
-          className="hidden md:flex justify-start pt-2"
+          className="hidden justify-start pt-2 md:flex"
         />
       </div>
 
-      <div className="w-full md:hidden flex flex-col gap-3">
+      <div className="flex w-full flex-col gap-3 md:hidden">
         <UploadButton
           label={buttonLabel}
           onFileUpload={onFileUpload}
@@ -114,4 +121,3 @@ export const DefaultHero: FC<IDefaultHeroProps> = ({
     </div>
   );
 };
-
