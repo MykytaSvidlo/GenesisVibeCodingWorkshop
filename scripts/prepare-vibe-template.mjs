@@ -5,7 +5,9 @@ import { vendorPrivateDeps } from "./refresh-vendor.mjs";
 const run = (c, opts = {}) => execSync(c, { stdio: "inherit", ...opts });
 
 if (!process.env.NODE_AUTH_TOKEN)
-  throw new Error("NODE_AUTH_TOKEN required to prepare the template (maintainer step).");
+  throw new Error(
+    "NODE_AUTH_TOKEN required to prepare the template (maintainer step)."
+  );
 
 run("npm install");
 vendorPrivateDeps();
@@ -20,6 +22,7 @@ if (existsSync(".npmrc")) {
 }
 
 // Seed a safe env template consumers copy to .env.
-if (existsSync(".env.example")) writeFileSync(".env.vibe", readFileSync(".env.example"));
+if (existsSync(".env.example"))
+  writeFileSync(".env.vibe", readFileSync(".env.example"));
 
 console.log("Template prepared. Next: verify clean-room install, then push.");

@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 import type { StoreType } from "polotno/model/store";
 
+import { SmartFormSectionPanel } from "./sections/SmartFormSection";
 import { DrawSectionPanel } from "./sections/DrawSection";
 import { TextSectionPanel } from "./sections/textSection/TextSection";
 import { PhotoSectionPanel } from "./sections/photoSection/PhotoSection";
@@ -21,6 +22,12 @@ export interface ToolTabConfig {
 }
 
 export const scrollableTabs: ToolTabConfig[] = [
+  {
+    name: "smart-form",
+    icon: "edit_note",
+    labelKey: "Smart Form",
+    Panel: SmartFormSectionPanel,
+  },
   {
     name: "text",
     icon: "text_fields",

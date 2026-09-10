@@ -86,7 +86,7 @@ interface TemplatesEditorActions {
 
 const initialState: TemplatesEditorState = {
   templateName: "template",
-  sidePanelActiveTab: "text",
+  sidePanelActiveTab: "smart-form",
   textTemplates: null,
   unsplashImages: null,
   unsplashImagesListMeta: null,

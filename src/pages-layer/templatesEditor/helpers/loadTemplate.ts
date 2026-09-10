@@ -1,8 +1,7 @@
 import { useCallback } from "react";
 import type { StoreType } from "polotno/model/store";
 
-import { localeNavigate } from "@/shared/lib/navigation/localeNavigate";
-
+import { defaultTemplate } from "../templates/defaultTemplate";
 import { useTemplatesEditorStore } from "../model/store/templates-editor-store";
 import { ensureGoogleFonts } from "./ensureGoogleFonts";
 import { applyInitialScale } from "./applyInitialScale";
@@ -46,7 +45,10 @@ export const useLoadTemplate = ({ store }: UseLoadTemplateProps) => {
       const jsonUrl = resolveTemplateJsonUrl(templateName);
 
       if (!jsonUrl) {
-        localeNavigate("/404");
+        setLoading(false);
+        setDataReady(true);
+        setTemplateName(templateName);
+        requestAnimationFrame(() => applyInitialScale(store));
 
         return Promise.resolve();
       }
@@ -69,9 +71,6 @@ export const useLoadTemplate = ({ store }: UseLoadTemplateProps) => {
           ensureGoogleFonts(store);
           setTemplateName(templateName);
           setDataReady(true);
-          // Fit/center the freshly loaded page once Polotno finishes laying it
-          // out. Running synchronously would apply the scale before the new page
-          // is measured, leaving it scrolled out of the visible workspace.
           store
             .waitLoading()
             .then(() => {
@@ -80,7 +79,12 @@ export const useLoadTemplate = ({ store }: UseLoadTemplateProps) => {
             .catch(() => undefined);
         })
         .catch(() => {
-          localeNavigate("/404");
+          // Fallback to default template (Bill of Sale) if CMS template fetch fails
+          store.loadJSON(defaultTemplate);
+          ensureGoogleFonts(store);
+          setTemplateName(templateName);
+          setDataReady(true);
+          requestAnimationFrame(() => applyInitialScale(store));
         });
     },
     [store, setTemplateName, setLoading, setDataReady]

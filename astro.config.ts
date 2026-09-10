@@ -8,6 +8,15 @@ import svgr from "vite-plugin-svgr";
 
 dotenv.config();
 
+process.on("uncaughtException", (err: any) => {
+  if (
+    err?.code === "ERR_INVALID_STATE" ||
+    (err?.name === "TypeError" && err?.message?.includes("ReadableStream"))
+  ) {
+    return;
+  }
+});
+
 const IS_ENV_LOCAL = process.env.ENVIRONMENT === "local";
 const IS_REMOTE_BUILD =
   ["production", "staging", "development"].includes(
