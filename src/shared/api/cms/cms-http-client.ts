@@ -1,5 +1,5 @@
 import { CMS_HOST, CMS_READ_TOKEN } from "astro:env/server";
-import axios, { type AxiosResponse } from "axios";
+import axios from "axios";
 
 import { logger } from "../../lib/utils/logger";
 
@@ -9,11 +9,8 @@ declare module "axios" {
   }
 }
 
-const timeoutPromise = async <T>(timeMs: number): Promise<T> =>
-  new Promise((_, reject) => setTimeout(() => reject(true), timeMs));
-
-const REQUEST_ATTEMPS = 3;
-const REQUEST_TIMEOUT = 15000;
+const REQUEST_ATTEMPS = 1;
+const REQUEST_TIMEOUT = 2500;
 
 const isNonRetryableError = (err: unknown): boolean => {
   if (axios.isAxiosError(err)) {
@@ -40,21 +37,24 @@ cmsHttpClient.getPage = async <T>(url: string, attempt = 1): Promise<T> => {
   if (attempt > 1) logger.log(`Strapi request. Attempt: ${attempt}`);
 
   logger.log(`Strapi request. ${url}`);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+
   try {
-    const response = await Promise.race([
-      timeoutPromise<AxiosResponse<T>>(REQUEST_TIMEOUT),
-      cmsHttpClient.get<T>(url),
-    ]);
+    const response = await cmsHttpClient.get<T>(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
     const data = response.data;
     localCacheTest[url] = data;
 
     return data;
   } catch (err) {
+    clearTimeout(timeoutId);
     if (attempt < REQUEST_ATTEMPS && !isNonRetryableError(err)) {
       return await cmsHttpClient.getPage(url, attempt + 1);
     }
 
-    throw new Error(`Strapi request error: ${err}. Url: ${url}`);
+    logger.warn(`Strapi request fallback for ${url}: ${err}`);
+    return { data: null } as unknown as T;
   }
 };
 
