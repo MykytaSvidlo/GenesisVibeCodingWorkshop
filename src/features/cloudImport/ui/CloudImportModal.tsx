@@ -213,7 +213,8 @@ export const CloudImportModal: React.FC<CloudImportModalProps> = ({
               No files found matching "{searchQuery}"
             </div>
           )}
-          {!importSuccess && filteredFiles.length > 0 && (
+          {!importSuccess &&
+            filteredFiles.length > 0 &&
             filteredFiles.map((file) => {
               const isSelected = selectedFileId === file.id;
 
@@ -256,8 +257,7 @@ export const CloudImportModal: React.FC<CloudImportModalProps> = ({
                   </div>
                 </div>
               );
-            })
-          )}
+            })}
         </div>
 
         {/* Footer Actions */}
